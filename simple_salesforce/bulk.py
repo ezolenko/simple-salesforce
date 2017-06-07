@@ -161,7 +161,15 @@ class SFBulkType(object):
                                             headers=self.headers)
             return query_result.json()
 
-        return result.json()
+        j = result
+        try:
+            j = result.json()
+        except Exception as e:
+            print(e)
+            with open("bulk_error.txt", "w", encoding="utf-8") as f:
+                print(result, file = f)
+            pass
+        return j
 
     def _bulk_operation(self, object_name, operation, data,
                         external_id_field=None, wait=5): #pylint: disable=R0913
