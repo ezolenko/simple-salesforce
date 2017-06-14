@@ -8,6 +8,7 @@ except ImportError:
 
 import json
 import requests
+import re
 from time import sleep
 from simple_salesforce.util import SalesforceError
 
@@ -165,10 +166,23 @@ class SFBulkType(object):
         try:
             j = result.json()
         except Exception as e:
-            print(e)
             with open("bulk_error.txt", "w", encoding="utf-8") as f:
-                print(result, file = f)
-            pass
+                print(e, file = f)
+                f.write(result.text)
+                print("failed to parse", result)
+
+                pattern = re.compile(r"Expecting ',' delimiter: line [0-9]* column [0-9]* .char ([0-9]*).")
+                match = pattern.fullmatch(str(e))
+                if match is not None:
+                    pos = match.group(1)
+                    text = "{},{}".format(result.text[:pos], result.text[pos:])
+                    try:
+                        j = json.loads(text)
+                    except Exception as e:
+                        print(e, file = f)
+                        f.write(text)
+                        print("failed to parse fixed", result)
+                        return []
         return j
 
     def _bulk_operation(self, object_name, operation, data,
