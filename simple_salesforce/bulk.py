@@ -163,26 +163,20 @@ class SFBulkType(object):
             return query_result.json()
 
         j = result
-        try:
-            j = result.json()
-        except Exception as e:
-            with open("bulk_error.txt", "w", encoding="utf-8") as f:
-                print(e, file = f)
-                f.write(result.text)
-                print("failed to parse", result)
 
-                pattern = re.compile(r"Expecting ',' delimiter: line [0-9]* column [0-9]* .char ([0-9]*).")
+        text = result.text
+        pattern = re.compile(r"Expecting ',' delimiter: line [0-9]* column [0-9]* .char ([0-9]*).")
+
+        while True:
+            try:
+                j = json.loads(text)
+                break
+            except ValueError as e:
+                print(e)
                 match = pattern.fullmatch(str(e))
                 if match is not None:
-                    pos = match.group(1)
-                    text = "{},{}".format(result.text[:pos], result.text[pos:])
-                    try:
-                        j = json.loads(text)
-                    except Exception as e:
-                        print(e, file = f)
-                        f.write(text)
-                        print("failed to parse fixed", result)
-                        return []
+                    pos = int(match.group(1))
+                    text = "{},{}".format(text[:pos], text[pos:])
         return j
 
     def _bulk_operation(self, object_name, operation, data,
